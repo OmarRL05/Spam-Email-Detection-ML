@@ -1,6 +1,11 @@
 import os
 from html_parser import MyHTMLParser
 
+def strip_tags(c_mail):
+    html_stripper = MyHTMLParser()
+    html_stripper.feed(c_mail)
+    return html_stripper.return_data()
+
 def read_data(file='../email-dataset/full/index', amount=50):
     """
     Reads the Dataset Files
@@ -9,8 +14,6 @@ def read_data(file='../email-dataset/full/index', amount=50):
     :param amount: The amount of data to be read
     :return: List with spam/ham labels and emails content
     """
-
-
     emails_ds = []
     base_dir = os.path.dirname(file)
     with open(file, 'r', encoding='latin-1') as ds:
@@ -25,9 +28,8 @@ def read_data(file='../email-dataset/full/index', amount=50):
                 print("Opening: {}".format(full_content))
                 try:
                     with open(full_content, 'r', encoding='latin-1') as email_file:
-                        content = MyHTMLParser() # HTML tags filter
-                        content.feed(email_file.read())
-                        clean_content = content.return_data()
+                        dirty_content = email_file.read()
+                        clean_content = strip_tags(dirty_content)
                     emails_ds.append((label, clean_content))
                 except FileNotFoundError:
                     print("Error: File {} not founded".format(full_content))
