@@ -1,4 +1,5 @@
 import os
+from html_parser import MyHTMLParser
 
 def read_data(file='../email-dataset/full/index', amount=50):
     """
@@ -24,8 +25,10 @@ def read_data(file='../email-dataset/full/index', amount=50):
                 print("Opening: {}".format(full_content))
                 try:
                     with open(full_content, 'r', encoding='latin-1') as email_file:
-                        content = email_file.read()
-                    emails_ds.append((label, content))
+                        content = MyHTMLParser() # HTML tags filter
+                        content.feed(email_file.read())
+                        clean_content = content.return_data()
+                    emails_ds.append((label, clean_content))
                 except FileNotFoundError:
                     print("Error: File {} not founded".format(full_content))
                 except Exception as e:
