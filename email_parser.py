@@ -1,34 +1,58 @@
-# Prueba para NLP
-from curses.ascii import isalpha
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from html_parser import MyHTMLParser
 import email
 import string
+import re
 
 class MyEmailParser:
     """
-    Manages the end-to-end processing and cleaning of a raw email string.
+        Manages the end-to-end processing and cleaning of a raw email string.
 
-    This class acts as a pipeline. It is initialized with a raw email
-    string and provides methods to progressively extract, clean, and
-    (eventually) normalize its content.
+        This class acts as a pipeline. It is initialized with a raw email
+        string and provides methods to progressively extract, clean, and
+        normalize its content.
 
-    It handles multipart messages (using .walk()) and strips HTML tags.
-    Future methods will add NLP processing (stemming, stopwords, etc.).
+        It handles multipart messages (using .walk()), strips URLs, removes
+        HTML tags, and performs NLP normalization (stemming, stopwords).
 
-    Attributes:
-        email (str): The raw email string provided at initialization.
-        body (str): The extracted text content, populated after
-        `get_email_body()` is called.
-    """
+        Attributes:
+            email (str): The raw email string provided at initialization.
+            body (str): The internal string that is modified by each
+                        processing step.
+            stemmer (PorterStemmer): An instance of the NLTK stemmer.
+            stop_words (set): A modified set of English stopwords that
+                              *excludes* common negations.
+        """
 
     def __init__(self, email):
+        """
+                Initializes the parser, the raw email, and pre-loads NLP tools.
+
+                This constructor pre-loads the stemmer and stopwords set for
+                efficiency. It also modifies the standard stopwords list to
+                remove "not" and "n't" to preserve negations.
+
+                :param email: The raw email string to be processed.
+        """
+
         self.email = email
         self.body = ""
+        self.stemmer = PorterStemmer()
+        stop_words_set = set(stopwords.words('english'))
+        stop_words_set.remove("not")
+        self.stop_words = stop_words_set
 
     def get_email_body(self):
+        """
+                Parses the raw email string to extract the text body.
+
+                Uses `email.message_from_string` and `.walk()` to navigate
+                all parts of the email, including multipart messages. It
+                extracts and combines all 'text/plain' and 'text/html'
+                parts into `self.body`.
+        """
         msg = email.message_from_string(self.email)
 
         for part in msg.walk():
@@ -40,28 +64,59 @@ class MyEmailParser:
                 except:
                     pass
 
-    def strip_tags(self):
-        """Cleans a raw email string by extracting and stripping its content.
-
-            This function acts as a pipeline that first uses `get_email_body`
-            to parse the raw email (handling multipart messages) and then
-            uses `MyHTMLParser` to strip any remaining HTML tags.
-
-            :param c_mail: The raw email content as a string.
-            :return: A single string of cleaned, plain-text.
+    def strip_urls(self):
         """
-        self.get_email_body()
+                Removes all URLs (starting with http or www) from `self.body`.
+
+                Uses a regular expression to find and replace URLs with a
+                single space to prevent words from merging.
+        """
+        url_pattern = r"(http[s]?://\S+|www\.\S+)"
+        self.body = re.sub(url_pattern, " ", self.body)
+
+    def strip_tags(self):
+        """
+                Strips all HTML tags from `self.body`.
+
+                Uses the custom `MyHTMLParser` to feed the current `self.body`
+                and extract only the plain-text data, which then
+                overwrites `self.body`.
+        """
         html_stripper = MyHTMLParser()
         html_stripper.feed(self.body)
-        return html_stripper.return_data()
+        self.body = html_stripper.return_data()
 
-# text = "This is? a sample sentence! don't showing stopword removal."
-# stemmer = PorterStemmer()
-# stop_words = set(stopwords.words('english'))
-# tokens = word_tokenize(text.lower())
-#
-# filtered_tokens = [word for word in tokens if word not in stop_words]
-# filtered_punc = [ch for ch in filtered_tokens if ch not in string.punctuation]
-# filtered_singles = [stemmer.stem(word) for word in filtered_punc]
-# return_text = " ".join(filtered_singles)
-# print(return_text)
+    def nlp_filter(self):
+        """
+                Applies NLP normalization to `self.body`.
+
+                This process includes:
+                1. Converting text to lowercase.
+                2. Tokenizing the text (splitting into words).
+                3. Removing stopwords (using the modified set).
+                4. Removing punctuation-only tokens.
+                5. Stemming each word to its root.
+
+                The cleaned tokens are then re-joined into `self.body`.
+        """
+        tokens = word_tokenize(self.body.lower())
+        filtered_tokens = [word for word in tokens if word not in self.stop_words]
+        filtered_punc = [ch for ch in filtered_tokens if ch not in string.punctuation]
+        filtered_singles = [self.stemmer.stem(word) for word in filtered_punc]
+        self.body = " ".join(filtered_singles)
+
+    def parser_email(self):
+        """
+                Runs the complete processing pipeline in the correct order.
+
+                This master method calls all the individual processing steps
+                and returns the final, cleaned, and normalized text.
+
+                :return: The fully processed email body as a single string.
+        """
+        self.get_email_body()
+        self.strip_urls()
+        self.strip_tags()
+        self.nlp_filter()
+        return self.body
+

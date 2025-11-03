@@ -26,7 +26,7 @@ def read_data(file='../email-dataset/full/index', amount=50):
                     with open(full_content, 'r', encoding='latin-1') as email_file:
                         dirty_content = email_file.read()
                         parser = MyEmailParser(dirty_content)
-                        clean_content = parser.strip_tags()
+                        clean_content = parser.parser_email()
                     emails_ds.append((label, clean_content))
                 except FileNotFoundError:
                     print("Error: File {} not founded".format(full_content))
