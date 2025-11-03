@@ -1,7 +1,7 @@
 import os
 from email_parser import MyEmailParser
 from sklearn.feature_extraction.text import CountVectorizer
-
+from tqdm import tqdm
 
 def read_data(file='../email-dataset/full/index', amount=50):
     """
@@ -14,9 +14,9 @@ def read_data(file='../email-dataset/full/index', amount=50):
     emails_ds = []
     base_dir = os.path.dirname(file)
     with open(file, 'r', encoding='latin-1') as ds:
-        print(f"Opening {amount} files...")
+        print(f"Processing {amount} files...")
         email = ds.readlines()[:amount]
-        for line in email:
+        for line in tqdm(email, desc="Processing File", colour="#FFFFFF"):
             parts = line.split()
             if len(parts) == 2:
                 label = parts[0] #Label: 'spam' | 'ham'
