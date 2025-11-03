@@ -1,34 +1,6 @@
 import os
-from html_parser import MyHTMLParser
+from email_parser import MyEmailParser
 import email
-
-def get_email_body(email_message):
-    msg = email.message_from_string(email_message)
-    body = ""
-    for part in msg.walk():
-        content_type = part.get_content_type()
-        if content_type == 'text/plain' or content_type == 'text/html':
-            try:
-                payload = part.get_payload(decode=True)
-                body += payload.decode('latin-1')
-            except:
-                pass
-    return  body
-
-def strip_tags(c_mail):
-    """Cleans a raw email string by extracting and stripping its content.
-
-        This function acts as a pipeline that first uses `get_email_body`
-        to parse the raw email (handling multipart messages) and then
-        uses `MyHTMLParser` to strip any remaining HTML tags.
-
-        :param c_mail: The raw email content as a string.
-        :return: A single string of cleaned, plain-text.
-    """
-    email_body = get_email_body(c_mail)
-    html_stripper = MyHTMLParser()
-    html_stripper.feed(email_body)
-    return html_stripper.return_data()
 
 def read_data(file='../email-dataset/full/index', amount=50):
     """
@@ -53,7 +25,8 @@ def read_data(file='../email-dataset/full/index', amount=50):
                 try:
                     with open(full_content, 'r', encoding='latin-1') as email_file:
                         dirty_content = email_file.read()
-                        clean_content = strip_tags(dirty_content)
+                        parser = MyEmailParser(dirty_content)
+                        clean_content = parser.strip_tags()
                     emails_ds.append((label, clean_content))
                 except FileNotFoundError:
                     print("Error: File {} not founded".format(full_content))
