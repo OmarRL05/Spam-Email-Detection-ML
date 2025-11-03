@@ -2,6 +2,7 @@ import os
 from email_parser import MyEmailParser
 from sklearn.feature_extraction.text import CountVectorizer
 
+
 def read_data(file='../email-dataset/full/index', amount=50):
     """
     Reads the Dataset Files
@@ -13,6 +14,7 @@ def read_data(file='../email-dataset/full/index', amount=50):
     emails_ds = []
     base_dir = os.path.dirname(file)
     with open(file, 'r', encoding='latin-1') as ds:
+        print(f"Opening {amount} files...")
         email = ds.readlines()[:amount]
         for line in email:
             parts = line.split()
@@ -21,7 +23,6 @@ def read_data(file='../email-dataset/full/index', amount=50):
                 relative_content = parts[1] # ../data/inmail.1
                 full_content = os.path.join(base_dir, relative_content) #Solves route error
 
-                print("Opening: {}".format(full_content))
                 try:
                     with open(full_content, 'r', encoding='latin-1') as email_file:
                         dirty_content = email_file.read()
@@ -44,19 +45,20 @@ def init_dataset(data):
     CountVectorizer.
 
     :param data: A list of (label, clean_text) tuples.
-    :return: A tuple of (y_labels, X_vectorized), where:
-             y_labels (list): The list of labels ('spam' or 'ham').
+    :return: A tuple of (X_vectorized, y_labels, vectorizer), where:
              X_vectorized (scipy.sparse.csr_matrix): The sparse matrix of numeric features.
+             y_labels (list): The list of labels ('spam' or 'ham').
+             vectorizer (CountVectorizer): The fitted CountVectorizer object.
     """
-    print("Data Loaded. Vectorizing...")
+    print("Data Loaded! Vectorizing...")
     X_texts = [tupla[1] for tupla in data]
     y_labels = [tupla[0] for tupla in data]
 
     # Transform email content with CountVectorizer
     vectorizer = CountVectorizer()
     X_vectorized = vectorizer.fit_transform(X_texts)
-    return y_labels, X_vectorized
+    return X_vectorized, y_labels, vectorizer
 
 if __name__ == "__main__":
     data = read_data()
-    y, x = init_dataset(data)
+    x, y, my_vectorizer= init_dataset(data)
