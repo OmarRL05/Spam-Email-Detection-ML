@@ -1,6 +1,6 @@
 import os
 from email_parser import MyEmailParser
-import email
+from sklearn.feature_extraction.text import CountVectorizer
 
 def read_data(file='../email-dataset/full/index', amount=50):
     """
@@ -25,7 +25,7 @@ def read_data(file='../email-dataset/full/index', amount=50):
                 try:
                     with open(full_content, 'r', encoding='latin-1') as email_file:
                         dirty_content = email_file.read()
-                        parser = MyEmailParser(dirty_content)
+                        parser = MyEmailParser(dirty_content) # Init DataSet
                         clean_content = parser.parser_email()
                     emails_ds.append((label, clean_content))
                 except FileNotFoundError:
@@ -34,5 +34,29 @@ def read_data(file='../email-dataset/full/index', amount=50):
                     print("Couldn't read {} file: {}".format(full_content, e))
     return emails_ds
 
-ds = read_data()
+def init_dataset(data):
+    """
+    Prepares and vectorizes the raw email dataset for machine learning.
 
+    This function takes the list of (label, text) tuples, separates
+    it into features (X) and labels (y), and then converts the
+    raw text features into a numeric bag-of-words matrix using
+    CountVectorizer.
+
+    :param data: A list of (label, clean_text) tuples.
+    :return: A tuple of (y_labels, X_vectorized), where:
+             y_labels (list): The list of labels ('spam' or 'ham').
+             X_vectorized (scipy.sparse.csr_matrix): The sparse matrix of numeric features.
+    """
+    print("Data Loaded. Vectorizing...")
+    X_texts = [tupla[1] for tupla in data]
+    y_labels = [tupla[0] for tupla in data]
+
+    # Transform email content with CountVectorizer
+    vectorizer = CountVectorizer()
+    X_vectorized = vectorizer.fit_transform(X_texts)
+    return y_labels, X_vectorized
+
+if __name__ == "__main__":
+    data = read_data()
+    y, x = init_dataset(data)
