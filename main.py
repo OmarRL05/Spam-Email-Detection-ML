@@ -7,19 +7,42 @@ This script provides a simple command-line interface to either:
 2. Predict: Loads a single email, processes it using the saved
    vectorizer, and predicts if it's spam/ham using the saved model.
 """
+from email.errors import CharsetError
+
 from spam_model import SpamModel
 
-train = input("Select an option - (e = to train & test, any other key = predict): ")
+print(r"""
+___       __    ______                            
+__ |     / /_______  /__________________ ________ 
+__ | /| / /_  _ \_  /_  ___/  __ \_  __ `__ \  _ \
+__ |/ |/ / /  __/  / / /__ / /_/ /  / / / / /  __/
+____/|__/  \___//_/  \___/ \____//_/ /_/ /_/\___/
+""")
+prompt = (
+    "- !Hi! ¿Do you want to save me for later?\n"
+    ":Logistic Regression Spam Model\n"
+    "Save model? (y/n): "
+)
+
+train = input("Type 'start' to train & test the model, otherwise type any other thing to predict you own email\n- ")
 spamModel = SpamModel()
-if train == "e":
+if train == "start":
     spamModel.load_data(500)
-    spamModel.set_training()
-    spamModel.start_training()
+    spamModel.set_training(train_size=0.8)
+    spamModel.start_training(max_iter=1500)
     spamModel.start_test(show=True)
-    spamModel.save_model()
+    while (save := input(prompt).strip().lower()) not in ('y', 'n'):
+        print("\n" * 50)
+        print("Non-valid answer, try again. Please enter 'y' or 'n'.")
+    if save == "y":
+        spamModel.save_model()
+    else:
+        print("End program.")
+
 else:
     try:
-        spamModel.predict_new("../email-dataset/data/inmail.1")
+        file = input("Introduce the directory url of your file\nExample: '../email-dataset/data/inmail.1'\n- ")
+        spamModel.predict_new(file)
     except FileNotFoundError as e:
         print(f"[FILE ERROR]: {e}")
     except ValueError as e:
